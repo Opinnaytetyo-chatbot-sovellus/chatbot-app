@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import Constants from 'expo-constants';
 import {
+  Platform,
   View,
   Text,
   TextInput,
@@ -8,25 +10,123 @@ import {
   StyleSheet,
 } from 'react-native';
 
+type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  status?: 'error';
+};
+
+function getApiBaseUrl() {
+  if (Platform.OS === 'web') {
+    return 'http://localhost:3000';
+  }
+
+  const expoHost = Constants.expoConfig?.hostUri?.split(':')[0];
+
+  if (expoHost) {
+    return `http://${expoHost}:3000`;
+  }
+
+  return Platform.OS === 'android'
+    ? 'http://10.0.2.2:3000'
+    : 'http://localhost:3000';
+}
+
+const apiBaseUrl = getApiBaseUrl();
+
+const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 export default function ChatScreen() {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
-  const sendMessage = () => {
-    if (!message.trim()) return;
+  const sendMessage = async () => {
+    const text = message.trim();
 
-    setMessages([...messages, message]);
+    if (!text || isSending) return;
+
+    const userMessage: ChatMessage = {
+      id: createMessageId(),
+      role: 'user',
+      content: text,
+    };
+    const nextMessages = [...messages, userMessage];
+
+    setMessages(nextMessages);
     setMessage('');
+    setIsSending(true);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/chat/message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: nextMessages.map(({ role, content }) => ({ role, content })),
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Request failed');
+      }
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: 'assistant',
+          content: data.reply || 'No reply was returned.',
+        },
+      ]);
+    } catch {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: createMessageId(),
+          role: 'assistant',
+          content: 'Bot reply failed. Check that the backend is running and OPENAI_API_KEY is set.',
+          status: 'error',
+        },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.messagesContainer}>
-        {messages.map((msg, index) => (
-          <View key={index} style={styles.messageBubble}>
-            <Text>{msg}</Text>
+      <ScrollView
+        style={styles.messagesContainer}
+        contentContainerStyle={styles.messagesContent}
+      >
+        {messages.map((msg) => (
+          <View
+            key={msg.id}
+            style={[
+              styles.messageBubble,
+              msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
+              msg.status === 'error' && styles.errorBubble,
+            ]}
+          >
+            <Text
+              style={[
+                styles.messageText,
+                msg.role === 'user' && styles.userMessageText,
+              ]}
+            >
+              {msg.content}
+            </Text>
           </View>
         ))}
+        {isSending && (
+          <View style={[styles.messageBubble, styles.assistantBubble]}>
+            <Text style={styles.messageText}>Bot is thinking...</Text>
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.inputContainer}>
@@ -35,13 +135,20 @@ export default function ChatScreen() {
           value={message}
           onChangeText={setMessage}
           placeholder="Type a message..."
+          editable={!isSending}
+          returnKeyType="send"
+          onSubmitEditing={sendMessage}
         />
 
         <TouchableOpacity
-          style={styles.sendButton}
+          style={[
+            styles.sendButton,
+            (!message.trim() || isSending) && styles.sendButtonDisabled,
+          ]}
           onPress={sendMessage}
+          disabled={!message.trim() || isSending}
         >
-          <Text style={styles.sendText}>Send</Text>
+          <Text style={styles.sendText}>{isSending ? '...' : 'Send'}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -55,13 +162,33 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     flex: 1,
+  },
+  messagesContent: {
     padding: 10,
   },
   messageBubble: {
-    backgroundColor: '#fff',
+    maxWidth: '82%',
     padding: 10,
     borderRadius: 10,
     marginBottom: 8,
+  },
+  userBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#007AFF',
+  },
+  assistantBubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+  },
+  errorBubble: {
+    backgroundColor: '#ffe7e7',
+  },
+  messageText: {
+    color: '#222',
+    lineHeight: 20,
+  },
+  userMessageText: {
+    color: '#fff',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -84,6 +211,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
     borderRadius: 20,
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#9bbfe8',
   },
   sendText: {
     color: '#fff',
