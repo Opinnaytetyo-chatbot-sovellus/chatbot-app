@@ -1,8 +1,16 @@
 import mysql from 'mysql2/promise';
 
-export const db = await mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'salasana',
-  database: 'chatbotdb',
-});
+let db;
+
+export async function getDb() {
+  if (!db) {
+    db = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'salasana',
+      database: process.env.DB_NAME || 'chatbotdb',
+    });
+  }
+
+  return db;
+}
