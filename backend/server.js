@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import chatRoutes from './routes/chat.js';
+import userRoutes from './routes/user.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,7 +22,8 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '1mb' }));
 app.get('/health', (req, res) => res.json({ ok: true }));
 app.use('/chat', chatRoutes);
+app.use('/users', userRoutes);
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+app.listen(3000, () => {
+  console.log('Backend running on http://localhost:3000');
 });

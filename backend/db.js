@@ -5,12 +5,15 @@ let db;
 export async function getDb() {
   if (!db) {
     db = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'salasana',
-      database: process.env.DB_NAME || 'chatbotdb',
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '', 
+        database: process.env.DB_NAME || 'chatbotdb',
     });
   }
 
   return db;
+  
 }
+
+export default getDb;
