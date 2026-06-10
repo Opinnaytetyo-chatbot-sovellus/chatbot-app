@@ -1,15 +1,19 @@
-import express from 'express';
-import { db } from '../db.js';
+import db from '../db.js'; 
+import { Router } from 'express';
 
-const router = express.Router();
+const router = Router();
 
 router.get('/messages/:conversationId', async (req, res) => {
-  const [rows] = await db.execute(
-    'SELECT * FROM messages WHERE conversation_id = ?',
-    [req.params.conversationId]
-  );
-
-  res.json(rows);
+  try {
+    const [rows] = await db.execute(
+      'SELECT * FROM messages WHERE conversation_id = ?',
+      [req.params.conversationId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Tietokantavirhe' });
+  }
 });
 
 export default router;
