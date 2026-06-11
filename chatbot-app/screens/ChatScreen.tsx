@@ -17,6 +17,11 @@ type ChatMessage = {
   status?: 'error';
 };
 
+type ChatScreenProps = {
+  conversationId: string | null;
+  currentUserId: string | null;
+};
+
 function getApiBaseUrl() {
   if (Platform.OS === 'web') {
     return 'http://localhost:3000';
@@ -37,10 +42,36 @@ const apiBaseUrl = getApiBaseUrl();
 
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export default function ChatScreen() {
+export default function ChatScreen({ conversationId: selectedConversationId, currentUserId }: ChatScreenProps) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(selectedConversationId);
   const [isSending, setIsSending] = useState(false);
+
+  React.useEffect(() => {
+    if (!selectedConversationId) {
+      return;
+    }
+
+    setConversationId(selectedConversationId);
+
+    fetch(`${apiBaseUrl}/chat/messages/${selectedConversationId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setMessages(
+            data.map((item: any) => ({
+              id: `${item.role}-${Math.random().toString(36).slice(2)}`,
+              role: item.role,
+              content: item.content,
+            }))
+          );
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load conversation messages:', error);
+      });
+  }, [selectedConversationId]);
 
   const sendMessage = async () => {
     const text = message.trim();
@@ -65,6 +96,8 @@ export default function ChatScreen() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          ...(conversationId ? { conversationId } : {}),
+          ...(currentUserId ? { userId: currentUserId } : {}),
           messages: nextMessages.map(({ role, content }) => ({ role, content })),
         }),
       });
@@ -72,6 +105,10 @@ export default function ChatScreen() {
 
       if (!response.ok) {
         throw new Error(data?.error || 'Request failed');
+      }
+
+      if (data?.conversationId) {
+        setConversationId(data.conversationId);
       }
 
       setMessages((currentMessages) => [

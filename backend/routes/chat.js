@@ -1,6 +1,8 @@
 import express from 'express';
 import OpenAI from 'openai';
+import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db.js';
+import { saveMessage } from './history.js';
 
 const router = express.Router();
 const defaultModel = process.env.OPENAI_MODEL || 'gpt-5.5';
@@ -75,8 +77,42 @@ router.get('/messages/:conversationId', async (req, res) => {
   }
 });
 
+async function getGuestUserId(db) {
+  const [rows] = await db.execute('SELECT id FROM users WHERE email = ?', ['guest@local']);
+
+  if (Array.isArray(rows) && rows.length > 0) {
+    return rows[0].id;
+  }
+
+  const guestUserId = uuidv4();
+  await db.execute(
+    'INSERT INTO users (id, email) VALUES (?, ?)',
+    [guestUserId, 'guest@local']
+  );
+  return guestUserId;
+}
+
+async function ensureConversation(db, conversationId, userId) {
+  const [rows] = await db.execute(
+    'SELECT id FROM conversations WHERE id = ?',
+    [conversationId]
+  );
+
+  if (Array.isArray(rows) && rows.length > 0) {
+    return;
+  }
+
+  const ownerId = userId || (await getGuestUserId(db));
+  await db.execute(
+    'INSERT INTO conversations (id, user_id) VALUES (?, ?)',
+    [conversationId, ownerId]
+  );
+}
+
 router.post('/message', async (req, res) => {
   const input = normalizeMessages(req.body?.messages, req.body?.message);
+  const conversationId = req.body?.conversationId || uuidv4();
+  const userId = req.body?.userId;
 
   if (!input.length) {
     res.status(400).json({ error: 'Message is required' });
@@ -84,8 +120,18 @@ router.post('/message', async (req, res) => {
   }
 
   try {
+    const db = await getDb();
+    await ensureConversation(db, conversationId, userId);
+
+    const userMessage = input[input.length - 1]?.content || req.body?.message || '';
+    if (userMessage) {
+      await saveMessage(conversationId, 'user', userMessage);
+    }
+
     const reply = await askChatGPT(input);
-    res.json({ reply });
+
+    await saveMessage(conversationId, 'assistant', reply);
+    res.json({ reply, conversationId });
   } catch (error) {
     console.error('OpenAI request failed:', error);
     const errorMessage = error instanceof Error ? error.message : '';
@@ -96,6 +142,28 @@ router.post('/message', async (req, res) => {
     }
 
     res.status(502).json({ error: 'OpenAI request failed' });
+  }
+});
+
+router.get('/history', async (req, res) => {
+  const userId = req.query.userId;
+
+  if (!userId || typeof userId !== 'string') {
+    res.status(400).json({ error: 'userId is required' });
+    return;
+  }
+
+  try {
+    const db = await getDb();
+    const [rows] = await db.execute(
+      'SELECT id, created_at FROM conversations WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
+      [userId]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Failed to fetch history:', error);
+    res.status(500).json({ error: 'Failed to fetch history' });
   }
 });
 

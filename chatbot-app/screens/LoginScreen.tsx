@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, Alert } from "react-native";
 
-export default function LoginScreen() {
+type LoginScreenProps = {
+  onLogin: (user: { id: string; email: string }) => void;
+};
+
+export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async () => {
+  const submitUser = async (createNew: boolean) => {
     if (!email) {
       return Alert.alert('Virhe', 'Anna sähköpostiosoite.');
     }
@@ -16,7 +20,7 @@ export default function LoginScreen() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, createNew }),
       });
 
       const contentType = response.headers.get('content-type') || '';
@@ -30,10 +34,11 @@ export default function LoginScreen() {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Kirjautuminen epäonnistui.');
+        throw new Error(data.error || (createNew ? 'Käyttäjän luonti epäonnistui.' : 'Kirjautuminen epäonnistui.'));
       }
 
-      Alert.alert('Onnistui', `Käyttäjä luotu: ${data.userId}`);
+      onLogin({ id: data.userId, email });
+      Alert.alert('Onnistui', createNew ? `Uusi käyttäjä luotu: ${email}` : `Kirjautunut: ${email}`);
     } catch (error) {
       console.error(error);
       const message = error instanceof Error ? error.message : 'Palvelinvirhe.';
@@ -62,7 +67,12 @@ export default function LoginScreen() {
         onChangeText={setPassword}
       />
 
-      <Button title="Kirjaudu sisään" onPress={handleLogin} />
+      <View style={{ marginTop: 16 }}>
+        <Button title="Kirjaudu sisään" onPress={() => submitUser(false)} />
+      </View>
+      <View style={{ marginTop: 12 }}>
+        <Button title="Uusi käyttäjä" onPress={() => submitUser(true)} />
+      </View>
     </View>
   );
 }
