@@ -8,14 +8,37 @@ import {
 
 import ChatScreen from './screens/ChatScreen';
 import LoginScreen from './screens/LoginScreen';
+import HistoryScreen from './screens/HistoryScreen';
+
+type CurrentUser = {
+  id: string;
+  email: string;
+} | null;
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [screen, setScreen] = useState<'chat' | 'login'>('chat');
+  const [screen, setScreen] = useState<'chat' | 'login' | 'history'>('chat');
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser>(null);
 
   const renderScreen = () => {
-    if (screen === 'login') return <LoginScreen />;
-    return <ChatScreen />;
+    if (screen === 'login') {
+      return <LoginScreen onLogin={(user) => setCurrentUser(user)} />;
+    }
+
+    if (screen === 'history') {
+      return (
+        <HistoryScreen
+          userId={currentUser?.id ?? null}
+          onSelectConversation={(conversationId) => {
+            setSelectedConversationId(conversationId);
+            setScreen('chat');
+          }}
+        />
+      );
+    }
+
+    return <ChatScreen conversationId={selectedConversationId} currentUserId={currentUser?.id ?? null} />;
   };
 
   return (
@@ -23,11 +46,17 @@ export default function App() {
 
       {/* TOP BAR */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
-          <Text style={styles.burger}>☰</Text>
-        </TouchableOpacity>
+        <View style={styles.topLeft}>
+          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
+            <Text style={styles.burger}>☰</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.title}>My Chatbot</Text>
+          <Text style={styles.title}>My Chatbot</Text>
+        </View>
+
+        <Text style={styles.userLabel}>
+          {currentUser ? `Kirjautunut: ${currentUser.email}` : 'Ei kirjautunut'}
+        </Text>
       </View>
 
       <View style={styles.body}>
@@ -64,6 +93,18 @@ export default function App() {
             >
               <Text style={[styles.menuItemText, screen === 'login' && styles.activeMenuItemText]}>Kirjaudu sisään</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.menuItem, screen === 'history' && styles.activeMenuItem]}
+              onPress={() => {
+                setScreen('history');
+                setMenuOpen(false);
+              }}
+            >
+              <Text style={[styles.menuItemText, screen === 'history' && styles.activeMenuItemText]}>
+                Viestihistoria
+              </Text>
+            </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.overlayBackdrop} onPress={() => setMenuOpen(false)} />
         </View>
@@ -80,10 +121,15 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 32,
     paddingBottom: 12,
     paddingHorizontal: 16,
     backgroundColor: '#f0f0f0',
+  },
+  topLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   burger: {
     fontSize: 24,
@@ -144,6 +190,10 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
     color: '#333',
+  },
+  userLabel: {
+    fontSize: 12,
+    color: '#555',
   },
   activeMenuItem: {
     backgroundColor: '#f2f8ff',
