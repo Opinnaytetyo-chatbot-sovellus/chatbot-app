@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
-    "@types/react-native": "~0.69.1",
-    "expo": "^56.0.0",
-    "expo-constants": "~56.0.17",
+    "expo": "~56.0.12",
+    "expo-constants": "~56.0.18",
     "expo-status-bar": "~56.0.4",
     "express": "^5.2.1",
     "mysql2": "^3.22.5",

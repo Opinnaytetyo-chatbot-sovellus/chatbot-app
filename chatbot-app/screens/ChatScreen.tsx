@@ -53,11 +53,11 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
       return;
     }
 
-    setConversationId(selectedConversationId);
-
     fetch(`${apiBaseUrl}/chat/messages/${selectedConversationId}`)
       .then((res) => res.json())
       .then((data) => {
+        setConversationId(selectedConversationId);
+
         if (Array.isArray(data)) {
           setMessages(
             data.map((item: any) => ({

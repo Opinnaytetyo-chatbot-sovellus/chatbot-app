@@ -36,34 +36,51 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setError(null);
-    setIsLoading(true);
+    let isMounted = true;
 
-    if (!userId) {
-      setHistory([]);
-      setIsLoading(false);
-      return;
-    }
+    const loadHistory = async () => {
+      setError(null);
+      setIsLoading(true);
 
-    fetch(`${apiBaseUrl}/chat/history?userId=${encodeURIComponent(userId)}`)
-      .then((res) => {
+      if (!userId) {
+        setHistory([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${apiBaseUrl}/chat/history?userId=${encodeURIComponent(userId)}`);
+
         if (!res.ok) {
           throw new Error(`Server returned ${res.status}`);
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setHistory(data);
-        } else {
-          setHistory([]);
+
+        const data = await res.json();
+
+        if (!isMounted) {
+          return;
         }
-      })
-      .catch((err) => {
+
+        setHistory(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
         console.error(err);
         setError('Viestihistorian lataaminen epäonnistui.');
-      })
-      .finally(() => setIsLoading(false));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   const renderItem = ({ item, index }: { item: HistoryItem; index: number }) => {
@@ -104,7 +121,6 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
 };
 
 const styles = StyleSheet.create({
-  // määrittele tyylit
   container: { flex: 1, padding: 16 },
   title: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
   item: { padding: 12, borderBottomWidth: 1, borderColor: '#ccc' },
