@@ -24,6 +24,6 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 app.use('/chat', chatRoutes);
 app.use('/users', userRoutes);
 
-app.listen(3000, () => {
-  console.log('Backend running on http://localhost:3000');
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Backend running on http://localhost:${port}`);
 });
