@@ -38,7 +38,13 @@ export default function App() {
       );
     }
 
-    return <ChatScreen conversationId={selectedConversationId} currentUserId={currentUser?.id ?? null} />;
+    return (
+      <ChatScreen
+        conversationId={selectedConversationId}
+        currentUserId={currentUser?.id ?? null}
+        onStartNewConversation={() => setSelectedConversationId(null)}
+      />
+    );
   };
 
   return (
@@ -51,7 +57,7 @@ export default function App() {
             <Text style={styles.burger}>☰</Text>
           </TouchableOpacity>
 
-          <Text style={styles.title}>My Chatbot</Text>
+          <Text style={styles.title}>Chatbotti</Text>
         </View>
 
         <Text style={styles.userLabel}>
@@ -68,9 +74,9 @@ export default function App() {
         <View style={styles.menuOverlay}>
           <View style={styles.menu}>
             <View style={styles.menuHeader}>
-              <Text style={styles.menuTitle}>Menu</Text>
-              <TouchableOpacity style={styles.closeButtonWrapper} onPress={() => setMenuOpen(false)}>
-                <Text style={styles.closeButton}>←</Text>
+              <Text style={styles.menuTitle}>Valikko</Text>
+              <TouchableOpacity style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+                <Text style={styles.menuItemText}>sulje</Text>
               </TouchableOpacity>
             </View>
 

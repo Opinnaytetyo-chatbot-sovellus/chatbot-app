@@ -20,6 +20,7 @@ type ChatMessage = {
 type ChatScreenProps = {
   conversationId: string | null;
   currentUserId: string | null;
+  onStartNewConversation: () => void;
 };
 
 function getApiBaseUrl() {
@@ -42,7 +43,7 @@ const apiBaseUrl = getApiBaseUrl();
 
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export default function ChatScreen({ conversationId: selectedConversationId, currentUserId }: ChatScreenProps) {
+export default function ChatScreen({ conversationId: selectedConversationId, currentUserId, onStartNewConversation }: ChatScreenProps) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(selectedConversationId);
@@ -104,7 +105,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || 'Request failed');
+        throw new Error(data?.error || 'Pyyntö epäonnistui');
       }
 
       if (data?.conversationId) {
@@ -116,7 +117,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
         {
           id: createMessageId(),
           role: 'assistant',
-          content: data.reply || 'No reply was returned.',
+          content: data.reply || 'Vastausta ei saatu.',
         },
       ]);
     } catch {
@@ -125,7 +126,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
         {
           id: createMessageId(),
           role: 'assistant',
-          content: 'Bot reply failed. Check that the backend is running and OPENAI_API_KEY is set.',
+          content: 'Botti ei vastannut. Tarkista, että backend on käynnissä ja OPENAI_API_KEY on asetettu.',
           status: 'error',
         },
       ]);
@@ -161,7 +162,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
         ))}
         {isSending && (
           <View style={[styles.messageBubble, styles.assistantBubble]}>
-            <Text style={styles.messageText}>Bot is thinking...</Text>
+            <Text style={styles.messageText}>Botti vastaa...</Text>
           </View>
         )}
       </ScrollView>
@@ -171,7 +172,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
           style={styles.input}
           value={message}
           onChangeText={setMessage}
-          placeholder="Type a message..."
+          placeholder="Kirjoita viesti..."
           editable={!isSending}
           returnKeyType="send"
           onSubmitEditing={sendMessage}
@@ -185,9 +186,18 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
           onPress={sendMessage}
           disabled={!message.trim() || isSending}
         >
-          <Text style={styles.sendText}>{isSending ? '...' : 'Send'}</Text>
+          <Text style={styles.sendText}>{isSending ? '...' : 'Lähetä'}</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity style={styles.newConversationButton} onPress={() => {
+        setMessages([]);
+        setConversationId(null);
+        setMessage('');
+        onStartNewConversation();
+      }}>
+        <Text style={styles.newConversationText}>Aloita uusi keskustelu</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -255,5 +265,18 @@ const styles = StyleSheet.create({
   sendText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  newConversationButton: {
+    margin: 12,
+    paddingVertical: 14,
+    borderRadius: 25,
+    backgroundColor: '#1a73e8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newConversationText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
