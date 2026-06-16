@@ -18,7 +18,7 @@ export async function getConversationHistory(conversationId, limit = 20) {
   try {
     const db = await getDb();
     const [rows] = await db.execute(
-      'SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?',
+      'SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?',
       [conversationId, limit]
     );
 
