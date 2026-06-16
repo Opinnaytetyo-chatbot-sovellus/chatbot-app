@@ -1,24 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import Constants from 'expo-constants';
-import { Platform, View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-
-function getApiBaseUrl() {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:3000';
-  }
-
-  const expoHost = Constants.expoConfig?.hostUri?.split(':')[0];
-
-  if (expoHost) {
-    return `http://${expoHost}:3000`;
-  }
-
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:3000'
-    : 'http://localhost:3000';
-}
-
-const apiBaseUrl = getApiBaseUrl();
+import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { apiBaseUrl } from '../api';
 
 type HistoryItem = {
   id: string;

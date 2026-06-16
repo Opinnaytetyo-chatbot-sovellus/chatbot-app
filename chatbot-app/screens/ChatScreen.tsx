@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import Constants from 'expo-constants';
 import {
-  Platform,
   View,
   Text,
   TextInput,
@@ -9,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { apiBaseUrl } from '../api';
 
 type ChatMessage = {
   id: string;
@@ -21,24 +20,6 @@ type ChatScreenProps = {
   conversationId: string | null;
   currentUserId: string | null;
 };
-
-function getApiBaseUrl() {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:3000';
-  }
-
-  const expoHost = Constants.expoConfig?.hostUri?.split(':')[0];
-
-  if (expoHost) {
-    return `http://${expoHost}:3000`;
-  }
-
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:3000'
-    : 'http://localhost:3000';
-}
-
-const apiBaseUrl = getApiBaseUrl();
 
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
