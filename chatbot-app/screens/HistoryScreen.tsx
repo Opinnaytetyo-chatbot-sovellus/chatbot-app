@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiBaseUrl } from '../api';
 
 type HistoryItem = {
@@ -96,6 +96,7 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
           data={history}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
         />
       )}
     </View>
@@ -103,13 +104,46 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  item: { padding: 12, borderBottomWidth: 1, borderColor: '#ccc' },
-  itemText: { fontSize: 16 },
-  subText: { fontSize: 12, color: '#666', marginTop: 4 },
-  message: { fontSize: 16, color: '#555', paddingTop: 12 },
-  errorText: { color: '#d00' },
+  container: {
+    flex: 1,
+    padding: 18,
+    backgroundColor: '#f8fafc',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  listContent: {
+    paddingBottom: 18,
+  },
+  item: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#d8dee8',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    marginBottom: 10,
+  },
+  itemText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  subText: {
+    fontSize: 12,
+    color: '#667085',
+    marginTop: 4,
+  },
+  message: {
+    fontSize: 16,
+    color: '#555f6d',
+    paddingTop: 12,
+  },
+  errorText: {
+    color: '#b42318',
+  },
 });
 
 export default HistoryScreen;
