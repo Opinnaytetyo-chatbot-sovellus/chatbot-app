@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import Constants from 'expo-constants';
 import {
+  KeyboardAvoidingView,
   Platform,
-  View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  View,
+  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type ChatMessage = {
   id: string;
@@ -135,70 +138,99 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
     }
   };
 
+  const startNewConversation = () => {
+    setMessages([]);
+    setConversationId(null);
+    setMessage('');
+    onStartNewConversation();
+  };
+
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
+    <SafeAreaView
+        style={styles.container}
+        edges={['left', 'right', 'top', 'bottom']}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
-        {messages.map((msg) => (
-          <View
-            key={msg.id}
-            style={[
-              styles.messageBubble,
-              msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
-              msg.status === 'error' && styles.errorBubble,
-            ]}
+        <View style={styles.content}>
+          <ScrollView
+            style={styles.messagesContainer}
+            contentContainerStyle={[styles.messagesContent, styles.messagesPaddingBottom]}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text
-              style={[
-                styles.messageText,
-                msg.role === 'user' && styles.userMessageText,
-              ]}
-            >
-              {msg.content}
-            </Text>
-          </View>
-        ))}
-        {isSending && (
-          <View style={[styles.messageBubble, styles.assistantBubble]}>
-            <Text style={styles.messageText}>Botti vastaa...</Text>
-          </View>
-        )}
-      </ScrollView>
+            {messages.map((msg) => (
+              <View
+                key={msg.id}
+                style={[
+                  styles.messageBubble,
+                  msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
+                  msg.status === 'error' && styles.errorBubble,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.messageText,
+                    msg.role === 'user' && styles.userMessageText,
+                  ]}
+                >
+                  {msg.content}
+                </Text>
+              </View>
+            ))}
+            {isSending && (
+              <View style={[styles.messageBubble, styles.assistantBubble]}>
+                <Text style={styles.messageText}>Botti vastaa...</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={message}
-          onChangeText={setMessage}
-          placeholder="Kirjoita viesti..."
-          editable={!isSending}
-          returnKeyType="send"
-          onSubmitEditing={sendMessage}
-        />
-
-        <TouchableOpacity
+        <View
           style={[
-            styles.sendButton,
-            (!message.trim() || isSending) && styles.sendButtonDisabled,
+            styles.inputContainer,
           ]}
-          onPress={sendMessage}
-          disabled={!message.trim() || isSending}
         >
-          <Text style={styles.sendText}>{isSending ? '...' : 'Lähetä'}</Text>
-        </TouchableOpacity>
-      </View>
+          <TextInput
+            style={styles.input}
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Kirjoita viesti..."
+            editable={!isSending}
+            returnKeyType="send"
+            onSubmitEditing={sendMessage}
+            
+          />
 
-      <TouchableOpacity style={styles.newConversationButton} onPress={() => {
-        setMessages([]);
-        setConversationId(null);
-        setMessage('');
-        onStartNewConversation();
-      }}>
-        <Text style={styles.newConversationText}>Aloita uusi keskustelu</Text>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!message.trim() || isSending) && styles.sendButtonDisabled,
+            ]}
+            onPress={sendMessage}
+            disabled={!message.trim() || isSending}
+          >
+            <Text style={styles.sendText}>{isSending ? '...' : 'Lähetä'}</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+
+      <TouchableOpacity
+        style={styles.newConversationFab}
+        onPress={() => {
+          Alert.alert('Aloita uusi keskustelu', 'Haluatko aloittaa uuden keskustelun?', [
+            { text: 'Peruuta', style: 'cancel' },
+            { text: 'Aloita', onPress: startNewConversation },
+          ]);
+        }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityLabel="Aloita uusi keskustelu"
+      >
+        <Text style={styles.newConversationFabText}>+</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -240,6 +272,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
+    paddingTop: 10,
+    paddingBottom: 14,
     borderTopWidth: 1,
     borderColor: '#ddd',
     backgroundColor: '#fff',
@@ -266,17 +300,35 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  newConversationButton: {
-    margin: 12,
-    paddingVertical: 14,
-    borderRadius: 25,
+  flexGrow: {
+    flexGrow: 1,
+  },
+  messagesPaddingBottom: {
+    paddingBottom: 16,
+  },
+  content: {
+    flex: 1,
+  },
+  newConversationFab: {
+    position: 'absolute',
+    left: 12,
+    bottom: 130,
+    width: 50,
+    height: 50,
+    borderRadius: 28,
     backgroundColor: '#1a73e8',
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
-  newConversationText: {
+  newConversationFabText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 28,
+    lineHeight: 28,
+    fontWeight: '500',
   },
 });
