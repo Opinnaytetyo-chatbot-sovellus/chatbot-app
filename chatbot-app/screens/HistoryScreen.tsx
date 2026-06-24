@@ -1,24 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import Constants from 'expo-constants';
-import { Platform, View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-
-function getApiBaseUrl() {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:3000';
-  }
-
-  const expoHost = Constants.expoConfig?.hostUri?.split(':')[0];
-
-  if (expoHost) {
-    return `http://${expoHost}:3000`;
-  }
-
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:3000'
-    : 'http://localhost:3000';
-}
-
-const apiBaseUrl = getApiBaseUrl();
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getApiUrl } from '../api';
 
 type HistoryItem = {
   id: string;
@@ -36,34 +18,51 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setError(null);
-    setIsLoading(true);
+    let isMounted = true;
 
-    if (!userId) {
-      setHistory([]);
-      setIsLoading(false);
-      return;
-    }
+    const loadHistory = async () => {
+      setError(null);
+      setIsLoading(true);
 
-    fetch(`${apiBaseUrl}/chat/history?userId=${encodeURIComponent(userId)}`)
-      .then((res) => {
+      if (!userId) {
+        setHistory([]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(getApiUrl(`/chat/history?userId=${encodeURIComponent(userId)}`));
+
         if (!res.ok) {
           throw new Error(`Server returned ${res.status}`);
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setHistory(data);
-        } else {
-          setHistory([]);
+
+        const data = await res.json();
+
+        if (!isMounted) {
+          return;
         }
-      })
-      .catch((err) => {
+
+        setHistory(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+
         console.error(err);
         setError('Viestihistorian lataaminen epäonnistui.');
-      })
-      .finally(() => setIsLoading(false));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   const renderItem = ({ item, index }: { item: HistoryItem; index: number }) => {
@@ -97,6 +96,7 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
           data={history}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
         />
       )}
     </View>
@@ -104,14 +104,46 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
 };
 
 const styles = StyleSheet.create({
-  // määrittele tyylit
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  item: { padding: 12, borderBottomWidth: 1, borderColor: '#ccc' },
-  itemText: { fontSize: 16 },
-  subText: { fontSize: 12, color: '#666', marginTop: 4 },
-  message: { fontSize: 16, color: '#555', paddingTop: 12 },
-  errorText: { color: '#d00' },
+  container: {
+    flex: 1,
+    padding: 18,
+    backgroundColor: '#f8fafc',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  listContent: {
+    paddingBottom: 18,
+  },
+  item: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#d8dee8',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    marginBottom: 10,
+  },
+  itemText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  subText: {
+    fontSize: 12,
+    color: '#667085',
+    marginTop: 4,
+  },
+  message: {
+    fontSize: 16,
+    color: '#555f6d',
+    paddingTop: 12,
+  },
+  errorText: {
+    color: '#b42318',
+  },
 });
 
 export default HistoryScreen;

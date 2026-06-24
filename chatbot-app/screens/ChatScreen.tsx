@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import Constants from 'expo-constants';
 import {
-  Platform,
-  View,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
+  View,
 } from 'react-native';
+
+import { getApiUrl } from '../api';
 
 type ChatMessage = {
   id: string;
@@ -23,27 +23,13 @@ type ChatScreenProps = {
   onStartNewConversation: () => void;
 };
 
-function getApiBaseUrl() {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:3000';
-  }
-
-  const expoHost = Constants.expoConfig?.hostUri?.split(':')[0];
-
-  if (expoHost) {
-    return `http://${expoHost}:3000`;
-  }
-
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:3000'
-    : 'http://localhost:3000';
-}
-
-const apiBaseUrl = getApiBaseUrl();
-
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export default function ChatScreen({ conversationId: selectedConversationId, currentUserId, onStartNewConversation }: ChatScreenProps) {
+export default function ChatScreen({
+  conversationId: selectedConversationId,
+  currentUserId,
+  onStartNewConversation,
+}: ChatScreenProps) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(selectedConversationId);
@@ -54,11 +40,11 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
       return;
     }
 
-    setConversationId(selectedConversationId);
-
-    fetch(`${apiBaseUrl}/chat/messages/${selectedConversationId}`)
+    fetch(getApiUrl(`/chat/messages/${selectedConversationId}`))
       .then((res) => res.json())
       .then((data) => {
+        setConversationId(selectedConversationId);
+
         if (Array.isArray(data)) {
           setMessages(
             data.map((item: any) => ({
@@ -73,6 +59,13 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
         console.error('Failed to load conversation messages:', error);
       });
   }, [selectedConversationId]);
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setConversationId(null);
+    setMessage('');
+    onStartNewConversation();
+  };
 
   const sendMessage = async () => {
     const text = message.trim();
@@ -91,7 +84,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
     setIsSending(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/chat/message`, {
+      const response = await fetch(getApiUrl('/chat/message'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -190,12 +183,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.newConversationButton} onPress={() => {
-        setMessages([]);
-        setConversationId(null);
-        setMessage('');
-        onStartNewConversation();
-      }}>
+      <TouchableOpacity style={styles.newConversationButton} onPress={startNewConversation}>
         <Text style={styles.newConversationText}>Aloita uusi keskustelu</Text>
       </TouchableOpacity>
     </View>
