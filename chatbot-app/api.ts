@@ -1,6 +1,11 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+const missingPublicApiMessage = [
+  'Public backend is not configured yet.',
+  'Set EXPO_PUBLIC_API_URL to a hosted backend URL before deploying the web app.',
+].join(' ');
+
 function getHostFromUri(uri?: string | null) {
   if (!uri) {
     return null;
@@ -20,7 +25,7 @@ export function getApiBaseUrl() {
   }
 
   if (Platform.OS === 'web') {
-    return 'http://localhost:3000';
+    return '';
   }
 
   const expoHost =
@@ -37,3 +42,11 @@ export function getApiBaseUrl() {
 }
 
 export const apiBaseUrl = getApiBaseUrl();
+
+export function getApiUrl(path: string) {
+  if (!apiBaseUrl) {
+    throw new Error(missingPublicApiMessage);
+  }
+
+  return `${apiBaseUrl}${path}`;
+}

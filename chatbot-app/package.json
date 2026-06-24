@@ -15,6 +15,7 @@
     "@types/react": "~19.2.14",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~56.0.4",
+    "gh-pages": "^6.3.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -23,6 +24,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
+    "predeploy": "node scripts/export-web-public.mjs",
+    "deploy": "gh-pages --nojekyll -d dist",
     "lint": "expo lint"
   },
   "private": true

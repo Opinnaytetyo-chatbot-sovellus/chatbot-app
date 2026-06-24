@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { apiBaseUrl } from '../api';
+import { getApiUrl } from '../api';
 
 type HistoryItem = {
   id: string;
@@ -31,7 +31,7 @@ const HistoryScreen = ({ userId, onSelectConversation }: HistoryScreenProps) => 
       }
 
       try {
-        const res = await fetch(`${apiBaseUrl}/chat/history?userId=${encodeURIComponent(userId)}`);
+        const res = await fetch(getApiUrl(`/chat/history?userId=${encodeURIComponent(userId)}`));
 
         if (!res.ok) {
           throw new Error(`Server returned ${res.status}`);

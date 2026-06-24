@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { apiBaseUrl } from '../api';
+import { getApiUrl } from '../api';
 
 type LoginScreenProps = {
   onLogin: (user: { id: string; email: string }) => void;
@@ -40,7 +40,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/users`, {
+      const response = await fetch(getApiUrl('/users'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

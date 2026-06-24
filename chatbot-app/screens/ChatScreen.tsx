@@ -7,7 +7,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { apiBaseUrl } from '../api';
+import { getApiUrl } from '../api';
 
 type ChatMessage = {
   id: string;
@@ -34,7 +34,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
       return;
     }
 
-    fetch(`${apiBaseUrl}/chat/messages/${selectedConversationId}`)
+    fetch(getApiUrl(`/chat/messages/${selectedConversationId}`))
       .then((res) => res.json())
       .then((data) => {
         setConversationId(selectedConversationId);
@@ -71,7 +71,7 @@ export default function ChatScreen({ conversationId: selectedConversationId, cur
     setIsSending(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/chat/message`, {
+      const response = await fetch(getApiUrl('/chat/message'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
